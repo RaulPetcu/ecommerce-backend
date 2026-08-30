@@ -2,6 +2,8 @@
 
 A full-stack e-commerce application with a Spring Boot REST backend and React frontend ([separate repo](https://github.com/RaulPetcu/ecommerce-frontend)). The backend handles product catalog management, cart operations, order processing, and real Stripe payment integration, secured by cookie-based JWT authentication with role-based access control across three roles: buyer, seller, and admin.
 
+[see the demo](https://github.com/user-attachments/assets/9109f038-0c3f-4e26-b950-99eedb4717fc)
+
 ---
 
 ## Architecture
