@@ -1,6 +1,6 @@
 # E-Commerce Platform — Backend
 
-A full-stack e-commerce application with a Spring Boot REST backend and React frontend ([separate repo](#)). The backend handles product catalog management, cart operations, order processing, and real Stripe payment integration, secured by cookie-based JWT authentication with role-based access control across three roles: buyer, seller, and admin.
+A full-stack e-commerce application with a Spring Boot REST backend and React frontend ([separate repo](https://github.com/RaulPetcu/ecommerce-frontend)). The backend handles product catalog management, cart operations, order processing, and real Stripe payment integration, secured by cookie-based JWT authentication with role-based access control across three roles: buyer, seller, and admin.
 
 ---
 
@@ -166,5 +166,5 @@ All endpoints return JSON and the frontend does not handle the token directly.
 
 ## Related
 
-- **Frontend** — React application ([repo link](#))
+- **Frontend** — React application ([repo link](https://github.com/RaulPetcu/ecommerce-frontend))
 - **Testing documentation** — [`TESTING.md`](./TESTING.md)
