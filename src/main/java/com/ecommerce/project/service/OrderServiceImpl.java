@@ -61,7 +61,7 @@ public class OrderServiceImpl implements OrderService {
             throw new ResourceNotFoundException("Cart", "email", emailId);
         }
 
-        List<CartItem> cartItems = cart.getCartItems();
+        List<CartItem> cartItems = new ArrayList<>(cart.getCartItems());
         if (cartItems.isEmpty()) {
             throw new APIException(ErrorCode.CART_EMPTY, "Cart is empty");
         }
@@ -96,7 +96,7 @@ public class OrderServiceImpl implements OrderService {
 
         orderItems = orderItemRepository.saveAll(orderItems);
 
-        cart.getCartItems().forEach(item -> {
+        cartItems.forEach(item -> {
             int quantity = item.getQuantity();
             Product product = item.getProduct();
 
