@@ -66,7 +66,7 @@ public class OrderServiceImpl implements OrderService {
             throw new APIException(ErrorCode.CART_EMPTY, "Cart is empty");
         }
 
-        Address address = addressRepository.findById(addressId)
+        Address address = addressRepository.findByAddressIdAndUser(addressId, authUtil.loggedInUser())
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "addressId", addressId));
 
         Order order = new Order();

@@ -40,10 +40,10 @@ public class CartController {
         return new ResponseEntity<CartDTO>(cartDTO, HttpStatus.CREATED);
     }
 
-    @GetMapping("/carts")
+    @GetMapping("/admin/carts")
     public ResponseEntity<List<CartDTO>> getCarts() {
         List<CartDTO> cartDTOs = cartService.getAllCarts();
-        return new ResponseEntity<List<CartDTO>>(cartDTOs, HttpStatus.FOUND);
+        return new ResponseEntity<>(cartDTOs, HttpStatus.FOUND);
     }
 
     @GetMapping("/carts/users/cart")

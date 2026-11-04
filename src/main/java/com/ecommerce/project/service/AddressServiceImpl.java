@@ -6,6 +6,7 @@ import com.ecommerce.project.model.User;
 import com.ecommerce.project.payload.AddressDTO;
 import com.ecommerce.project.repositories.AddressRepository;
 import com.ecommerce.project.repositories.UserRepository;
+import com.ecommerce.project.util.AuthUtil;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,9 @@ public class AddressServiceImpl implements AddressService{
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    AuthUtil authUtil;
 
     @Override
     public AddressDTO createAddress(AddressDTO addressDTO, User user) {
@@ -44,7 +48,7 @@ public class AddressServiceImpl implements AddressService{
 
     @Override
     public AddressDTO getAddressesById(Long addressId) {
-        Address address = addressRepository.findById(addressId)
+        Address address = addressRepository.findByAddressIdAndUser(addressId, authUtil.loggedInUser())
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "addressId", addressId));
         return modelMapper.map(address, AddressDTO.class);
     }
@@ -59,7 +63,7 @@ public class AddressServiceImpl implements AddressService{
 
     @Override
     public AddressDTO updateAddress(Long addressId, AddressDTO addressDTO) {
-        Address addressFromDatabase = addressRepository.findById(addressId)
+        Address addressFromDatabase = addressRepository.findByAddressIdAndUser(addressId, authUtil.loggedInUser())
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "addressId", addressId));
 
         addressFromDatabase.setCity(addressDTO.getCity());
@@ -81,7 +85,7 @@ public class AddressServiceImpl implements AddressService{
 
     @Override
     public String deleteAddress(Long addressId) {
-        Address addressFromDatabase = addressRepository.findById(addressId)
+        Address addressFromDatabase = addressRepository.findByAddressIdAndUser(addressId, authUtil.loggedInUser())
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "addressId", addressId));
 
         User user = addressFromDatabase.getUser();

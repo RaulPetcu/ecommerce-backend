@@ -3,10 +3,7 @@ package com.ecommerce.project.service;
 import com.ecommerce.project.exceptions.APIException;
 import com.ecommerce.project.exceptions.ResourceAlreadyExistsException;
 import com.ecommerce.project.exceptions.ResourceNotFoundException;
-import com.ecommerce.project.model.Cart;
-import com.ecommerce.project.model.Category;
-import com.ecommerce.project.model.Product;
-import com.ecommerce.project.model.User;
+import com.ecommerce.project.model.*;
 import com.ecommerce.project.payload.CartDTO;
 import com.ecommerce.project.payload.ProductDTO;
 import com.ecommerce.project.payload.ProductResponse;
@@ -27,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -228,8 +226,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDTO updateProduct(Long productId, ProductDTO productDTO) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+        Product product = findProductForCurrentUser(productId);
 
         product.setProductName(productDTO.getProductName());
         product.setDescription(productDTO.getDescription());
@@ -251,8 +248,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDTO deleteProduct(Long productId) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+        Product product = findProductForCurrentUser(productId);
 
         List<Cart> carts = cartRepository.findCartsByProductId(productId);
         carts.forEach(cart -> cartService.deleteProductFromCart(cart.getCartId(), productId));
@@ -264,9 +260,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDTO updateProductImage(Long productId, MultipartFile image) {
-        Product productFromDb = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
-
+        Product productFromDb = findProductForCurrentUser(productId);
         String fileName = fileService.uploadImage(path, image);
         productFromDb.setImage(fileName);
 
@@ -301,5 +295,18 @@ public class ProductServiceImpl implements ProductService {
         productResponse.setTotalPages(pageProducts.getTotalPages());
         productResponse.setLastPage(pageProducts.isLast());
         return productResponse;
+    }
+
+    private Product findProductForCurrentUser(Long productId) {
+        User current = authUtil.loggedInUser();
+        boolean isAdmin = current.getRoles().stream()
+                .anyMatch(r -> r.getRoleName() == AppRole.ROLE_ADMIN);
+
+        Optional<Product> product = isAdmin
+                ? productRepository.findById(productId)
+                : productRepository.findByProductIdAndUser(productId, current);
+
+        return product.orElseThrow(() ->
+                new ResourceNotFoundException("Product", "productId", productId));
     }
 }
