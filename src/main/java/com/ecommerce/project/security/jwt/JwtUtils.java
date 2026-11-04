@@ -16,6 +16,7 @@ import org.springframework.web.util.WebUtils;
 
 import javax.crypto.SecretKey;
 import java.security.Key;
+import java.time.Duration;
 import java.util.Date;
 
 @Component
@@ -26,10 +27,16 @@ public class JwtUtils {
     private String jwtSecret;
 
     @Value("${spring.app.jwtExpirationMs}")
-    private int jwtExpirationMs;
+    private long jwtExpirationMs;
 
     @Value("${spring.ecom.app.jwtCookieName}")
     private String jwtCookie;
+
+    @Value("${spring.ecom.app.jwtCookieSecure:true}")
+    private boolean jwtCookieSecure;
+
+    @Value("${spring.ecom.app.jwtCookieSameSite:Lax}")
+    private String jwtCookieSameSite;
 
     public String getJwtFromCookies(HttpServletRequest request) {
         Cookie cookie = WebUtils.getCookie(request, jwtCookie);
@@ -40,24 +47,11 @@ public class JwtUtils {
         }
     }
 
-    public String getJwtFromHeader(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")){
-            return bearerToken.substring(7);
-        }
-
-        return null;
-    }
-
     public ResponseCookie generateJwtCookie(UserDetailsImpl userPrincipal) {
         String jwt = generateTokenFromUsername(userPrincipal.getUsername());
-        ResponseCookie cookie = ResponseCookie.from(jwtCookie, jwt)
-                .path("/api")
-                .maxAge(24 * 60 * 60)
-                .httpOnly(false)
-                .secure(false)
+        return baseCookie(jwt)
+                .maxAge(Duration.ofMillis(jwtExpirationMs))  // same lifetime as the JWT
                 .build();
-        return cookie;
     }
 
     public ResponseCookie getCleanJwtCookie() {
@@ -102,5 +96,13 @@ public class JwtUtils {
             logger.error("JWT claims string is empty: {}", e.getMessage());
         }
         return false;
+    }
+
+    private ResponseCookie.ResponseCookieBuilder baseCookie(String value) {
+        return ResponseCookie.from(jwtCookie, value)
+                .path("/api")
+                .httpOnly(true)
+                .secure(jwtCookieSecure)
+                .sameSite(jwtCookieSameSite);
     }
 }
