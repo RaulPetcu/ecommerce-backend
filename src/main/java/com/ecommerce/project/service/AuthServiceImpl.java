@@ -79,47 +79,32 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ResponseEntity<MessageResponse> register(SignupRequest signUpRequest) {
-        if (userRepository.existsByUserName(signUpRequest.getUsername())) {
-            throw new ResourceAlreadyExistsException("Username", "username", signUpRequest.getUsername());
-        }
+    public void registerRegularUser(SignupRequest signUpRequest) {
+        createUser(signUpRequest, AppRole.ROLE_USER);
+    }
 
-        if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new ResourceAlreadyExistsException("User", "email", signUpRequest.getEmail());
-        }
-
-        Set<String> strRoles = signUpRequest.getRole();
-        Set<Role> roles = new HashSet<>();
-
-        if (strRoles == null) {
-            roles.add(findRoleOrThrow(AppRole.ROLE_USER));
-        } else {
-            strRoles.forEach(role -> {
-                switch (role) {
-                    case "admin":
-                        roles.add(findRoleOrThrow(AppRole.ROLE_ADMIN));
-                        break;
-                    case "seller":
-                        roles.add(findRoleOrThrow(AppRole.ROLE_SELLER));
-                        break;
-                    default:
-                        roles.add(findRoleOrThrow(AppRole.ROLE_USER));
-                }
-            });
-        }
-
-        // Create new user's account
-        User user = new User(signUpRequest.getUsername(),
-                signUpRequest.getEmail(),
-                encoder.encode(signUpRequest.getPassword()));
-        user.setRoles(roles);
-        userRepository.save(user);
-        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    @Override
+    public void registerSeller(SignupRequest signUpRequest) {
+        createUser(signUpRequest, AppRole.ROLE_SELLER);
     }
 
     private Role findRoleOrThrow(AppRole appRole) {
         return roleRepository.findByRoleName(appRole)
                 .orElseThrow(() -> new ResourceNotFoundException("Role", "roleName", appRole.toString()));
+    }
+
+    private void createUser(SignupRequest req, AppRole appRole) {
+        if (userRepository.existsByUserName(req.getUsername())) {
+            throw new ResourceAlreadyExistsException("Username", "username", req.getUsername());
+        }
+
+        if (userRepository.existsByEmail(req.getEmail())) {
+            throw new ResourceAlreadyExistsException("User", "email", req.getEmail());
+        }
+
+        User user = new User(req.getUsername(), req.getEmail(), encoder.encode(req.getPassword()));
+        user.setRoles(new HashSet<>(Set.of(findRoleOrThrow(appRole))));
+        userRepository.save(user);
     }
 
     @Override

@@ -55,10 +55,9 @@ public class JwtUtils {
     }
 
     public ResponseCookie getCleanJwtCookie() {
-        ResponseCookie cookie = ResponseCookie.from(jwtCookie, null)
-                .path("/api")
+        return baseCookie("")
+                .maxAge(0)          // tells the browser to delete it now
                 .build();
-        return cookie;
     }
 
     public String generateTokenFromUsername(String username) {
