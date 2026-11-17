@@ -8,5 +8,5 @@ import com.ecommerce.project.model.Payment;
 
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long>{
-
+    boolean existsByPgPaymentId(String pgPaymentId);
 }

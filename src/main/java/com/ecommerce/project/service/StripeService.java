@@ -6,5 +6,7 @@ import com.stripe.model.PaymentIntent;
 
 public interface StripeService {
 
-    PaymentIntent paymentIntent(StripePaymentDto stripePaymentDto) throws StripeException;
+    PaymentIntent createPaymentIntentForCart(String email, Long addressId) throws StripeException;
+    PaymentIntent verifyPayment(String paymentIntentId, String email, long expectedAmount) throws StripeException;
+
 }

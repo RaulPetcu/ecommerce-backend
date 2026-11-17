@@ -9,6 +9,8 @@ import com.ecommerce.project.payload.OrderItemDTO;
 import com.ecommerce.project.payload.OrderResponse;
 import com.ecommerce.project.repositories.*;
 import com.ecommerce.project.util.AuthUtil;
+import com.stripe.exception.StripeException;
+import com.stripe.model.PaymentIntent;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
+
+    @Autowired
+    StripeService stripeService;
 
     @Autowired
     CartRepository cartRepository;
@@ -55,7 +60,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderDTO placeOrder(String emailId, Long addressId, String paymentMethod, String pgName, String pgPaymentId, String pgStatus, String pgResponseMessage) {
+    public OrderDTO placeOrder(String emailId, Long addressId, String paymentIntentId) {
         Cart cart = cartRepository.findCartByEmail(emailId);
         if (cart == null) {
             throw new ResourceNotFoundException("Cart", "email", emailId);
@@ -69,6 +74,18 @@ public class OrderServiceImpl implements OrderService {
         Address address = addressRepository.findByAddressIdAndUser(addressId, authUtil.loggedInUser())
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "addressId", addressId));
 
+        if (paymentRepository.existsByPgPaymentId(paymentIntentId)) {
+            throw new APIException(ErrorCode.PAYMENT_FAILED, "Payment already used");
+        }
+
+        long expectedAmount = StripeServiceImpl.toMinorUnits(cart.getTotalPrice());
+        PaymentIntent paymentIntent;
+        try {
+            paymentIntent = stripeService.verifyPayment(paymentIntentId, emailId, expectedAmount);
+        } catch (StripeException e) {
+            throw new APIException(ErrorCode.PAYMENT_FAILED, "Could not verify payment with Stripe");
+        }
+
         Order order = new Order();
         order.setEmail(emailId);
         order.setOrderDate(LocalDate.now());
@@ -76,7 +93,13 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus("Accepted");
         order.setAddress(address);
 
-        Payment payment = new Payment(paymentMethod, pgPaymentId, pgStatus, pgResponseMessage, pgName);
+        Payment payment = new Payment(
+                "online",
+                paymentIntent.getId(),
+                paymentIntent.getStatus(),
+                "Verified with Stripe",
+                "Stripe"
+        );
         payment.setOrder(order);
         payment = paymentRepository.save(payment);
         order.setPayment(payment);
@@ -99,20 +122,13 @@ public class OrderServiceImpl implements OrderService {
         cartItems.forEach(item -> {
             int quantity = item.getQuantity();
             Product product = item.getProduct();
-
-            // Reduce stock quantity
             product.setQuantity(product.getQuantity() - quantity);
-
-            // Save product back to the database
             productRepository.save(product);
-
-            // Remove items from cart
             cartService.deleteProductFromCart(cart.getCartId(), item.getProduct().getProductId());
         });
 
         OrderDTO orderDTO = modelMapper.map(savedOrder, OrderDTO.class);
         orderItems.forEach(item -> orderDTO.getOrderItems().add(modelMapper.map(item, OrderItemDTO.class)));
-
         orderDTO.setAddressId(addressId);
 
         return orderDTO;

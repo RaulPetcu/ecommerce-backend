@@ -34,11 +34,7 @@ public class OrderController {
         OrderDTO order = orderService.placeOrder(
                 emailId,
                 orderRequestDTO.getAddressId(),
-                paymentMethod,
-                orderRequestDTO.getPgName(),
-                orderRequestDTO.getPgPaymentId(),
-                orderRequestDTO.getPgStatus(),
-                orderRequestDTO.getPgResponseMessage()
+                orderRequestDTO.getPaymentIntentId()
         );
         return new ResponseEntity<>(order, HttpStatus.CREATED);
     }
@@ -46,8 +42,9 @@ public class OrderController {
     @PostMapping("/order/stripe-client-secret")
     public ResponseEntity<String> createStripeClientSecret(@RequestBody StripePaymentDto stripePaymentDto) throws StripeException {
         System.out.println("StripePaymentDTO Received " + stripePaymentDto);
-        PaymentIntent paymentIntent = stripeService.paymentIntent(stripePaymentDto);
-        return new ResponseEntity<>(paymentIntent.getClientSecret(), HttpStatus.CREATED);
+        String email = authUtil.loggedInEmail();
+        PaymentIntent pi = stripeService.createPaymentIntentForCart(email, stripePaymentDto.getAddressId());
+        return new ResponseEntity<>(pi.getClientSecret(), HttpStatus.CREATED);
     }
 
     @GetMapping("/admin/orders")

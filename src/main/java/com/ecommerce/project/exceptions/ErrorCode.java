@@ -5,5 +5,6 @@ public enum ErrorCode {
     OUT_OF_STOCK,
     INSUFFICIENT_STOCK,
     CART_EMPTY,
+    PAYMENT_FAILED,
     GENERIC
 }

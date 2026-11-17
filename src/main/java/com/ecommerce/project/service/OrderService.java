@@ -6,7 +6,7 @@ import jakarta.transaction.Transactional;
 
 public interface OrderService {
     @Transactional
-    OrderDTO placeOrder(String emailId, Long addressId, String paymentMethod, String pgName, String pgPaymentId, String pgStatus, String pgResponseMessage);
+    OrderDTO placeOrder(String emailId, Long addressId, String pgPaymentIntentId);
 
     OrderResponse getAllOrders(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 
