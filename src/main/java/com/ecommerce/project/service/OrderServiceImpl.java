@@ -171,25 +171,14 @@ public class OrderServiceImpl implements OrderService {
                 : Sort.by(sortBy).descending();
         Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
 
-        User seller = authUtil.loggedInUser();
+        Long sellerId = authUtil.loggedInUserId();
 
-        Page<Order> pageOrders = orderRepository.findAll(pageDetails);
+        Page<Order> pageOrders = orderRepository.findOrdersBySellerId(sellerId, pageDetails);
 
-        List<Order> sellerOrders = pageOrders.getContent().stream()
-                .filter(order -> order.getOrderItems().stream()
-                        .anyMatch(orderItem -> {
-                            var product = orderItem.getProduct();
-                            if (product == null || product.getUser() == null) {
-                                return false;
-                            }
-                            return product.getUser().getUserId().equals(
-                                    seller.getUserId());
-                        }))
+        List<OrderDTO> orderDTOs = pageOrders.getContent().stream()
+                .map(order -> toSellerOrderDTO(order, sellerId))
                 .toList();
 
-        List<OrderDTO> orderDTOs = sellerOrders.stream()
-                .map(order -> modelMapper.map(order, OrderDTO.class))
-                .toList();
         OrderResponse orderResponse = new OrderResponse();
         orderResponse.setContent(orderDTOs);
         orderResponse.setPageNumber(pageOrders.getNumber());
@@ -198,6 +187,35 @@ public class OrderServiceImpl implements OrderService {
         orderResponse.setTotalPages(pageOrders.getTotalPages());
         orderResponse.setLastPage(pageOrders.isLast());
         return orderResponse;
+    }
+
+    // returns an orderDto having only the seller's items.
+    private OrderDTO toSellerOrderDTO(Order order, Long sellerId) {
+        OrderDTO dto = modelMapper.map(order, OrderDTO.class);
+
+        List<OrderItem> sellerItems = order.getOrderItems().stream()
+                .filter(item -> item.getProduct() != null
+                        && item.getProduct().getUser() != null
+                        && sellerId.equals(item.getProduct().getUser().getUserId()))
+                .toList();
+
+        dto.setOrderItems(sellerItems.stream()
+                .map(item -> modelMapper.map(item, OrderItemDTO.class))
+                .collect(Collectors.toList()));
+        dto.setTotalAmount(sellerItems.stream()
+                .mapToDouble(item -> item.getOrderedProductPrice() * item.getQuantity())
+                .sum());
+        dto.setPayment(null);
+        return dto;
+    }
+
+    @Override
+    public OrderDTO updateOrderAsSeller(Long orderId, String status) {
+        Long sellerId = authUtil.loggedInUserId();
+        Order order = orderRepository.findByIdAndSellerId(orderId, sellerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "orderId", orderId));
+        order.setOrderStatus(status);
+        return modelMapper.map(orderRepository.save(order), OrderDTO.class);
     }
 
 
