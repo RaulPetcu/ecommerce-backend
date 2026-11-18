@@ -168,6 +168,16 @@ public class CartServiceImpl implements CartService{
             cartItemRepository.deleteAllByCartId(existingCart.getCartId());
         }
 
+        cartItems.forEach(item -> {
+            if (item.getQuantity() < 0) throw new APIException(ErrorCode.NEGATIVE_QUANTITY, "Quantity cannot be negative.");
+
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", item.getProductId()));
+
+            if (item.getQuantity() > product.getQuantity()) throw new APIException(ErrorCode.INSUFFICIENT_STOCK, "Cart item quantity exceeds product's stock");
+            if (product.getQuantity() == 0) throw new APIException(ErrorCode.OUT_OF_STOCK, "Product is out of stock");
+        });
+
         double totalPrice = 0.00;
 
         // Process each item in the request to add to the cart
@@ -175,15 +185,11 @@ public class CartServiceImpl implements CartService{
             Long productId = cartItemDTO.getProductId();
             Integer quantity = cartItemDTO.getQuantity();
 
-            // Find the product by ID
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
-            // Directly update product stock and total price
-            // product.setQuantity(product.getQuantity() - quantity);
             totalPrice += product.getSpecialPrice() * quantity;
 
-            // Create and save cart item
             CartItem cartItem = new CartItem();
             cartItem.setProduct(product);
             cartItem.setCart(existingCart);
@@ -193,7 +199,6 @@ public class CartServiceImpl implements CartService{
             cartItemRepository.save(cartItem);
         }
 
-        // Update the cart's total price and save
         existingCart.setTotalPrice(totalPrice);
         cartRepository.save(existingCart);
         return "Cart created/updated with the new items successfully";
