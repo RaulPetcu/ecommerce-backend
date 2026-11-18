@@ -3,9 +3,7 @@ package com.ecommerce.project.service;
 import com.ecommerce.project.exceptions.APIException;
 import com.ecommerce.project.exceptions.ErrorCode;
 import com.ecommerce.project.exceptions.ResourceNotFoundException;
-import com.ecommerce.project.model.Address;
-import com.ecommerce.project.model.Cart;
-import com.ecommerce.project.model.User;
+import com.ecommerce.project.model.*;
 import com.ecommerce.project.payload.StripePaymentDto;
 import com.ecommerce.project.repositories.AddressRepository;
 import com.ecommerce.project.repositories.CartRepository;
@@ -57,12 +55,25 @@ public class StripeServiceImpl implements StripeService {
         if (cart == null || cart.getCartItems().isEmpty()) {
             throw new APIException(ErrorCode.CART_EMPTY, "Cart is empty");
         }
+
+        for (CartItem item : cart.getCartItems()) {
+            Product product = item.getProduct();
+            if (!product.isActive() || product.getQuantity() == 0) {
+                throw new APIException(ErrorCode.OUT_OF_STOCK,
+                        product.getProductName() + " is no longer available");
+            }
+            if (item.getQuantity() > product.getQuantity()) {
+                throw new APIException(ErrorCode.INSUFFICIENT_STOCK,
+                        "Only " + product.getQuantity() + " left of " + product.getProductName());
+            }
+        }
+
         User user = authUtil.loggedInUser();
         Address address = addressRepository.findByAddressIdAndUser(addressId, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "addressId", addressId));
 
-        Customer customer = findOrCreateCustomer(user, address); // your existing search/create logic,
-        // using user.getEmail()/getUserName()
+        Customer customer = findOrCreateCustomer(user, address);
+
         PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
                 .setAmount(toMinorUnits(cart.getTotalPrice()))
                 .setCurrency(currency)

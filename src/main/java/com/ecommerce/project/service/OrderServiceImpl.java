@@ -86,6 +86,16 @@ public class OrderServiceImpl implements OrderService {
             throw new APIException(ErrorCode.PAYMENT_FAILED, "Could not verify payment with Stripe");
         }
 
+        // two concurrent checkouts can't both take the last product.
+        for (CartItem item : cartItems) {
+            int updated = productRepository.decrementStock(
+                    item.getProduct().getProductId(), item.getQuantity());
+            if (updated == 0) {
+                throw new APIException(ErrorCode.INSUFFICIENT_STOCK,
+                        "Not enough stock for " + item.getProduct().getProductName());
+            }
+        }
+
         Order order = new Order();
         order.setEmail(emailId);
         order.setOrderDate(LocalDate.now());
@@ -119,13 +129,8 @@ public class OrderServiceImpl implements OrderService {
 
         orderItems = orderItemRepository.saveAll(orderItems);
 
-        cartItems.forEach(item -> {
-            int quantity = item.getQuantity();
-            Product product = item.getProduct();
-            product.setQuantity(product.getQuantity() - quantity);
-            productRepository.save(product);
-            cartService.deleteProductFromCart(cart.getCartId(), item.getProduct().getProductId());
-        });
+        cartItems.forEach(item ->
+                cartService.deleteProductFromCart(cart.getCartId(), item.getProduct().getProductId()));
 
         OrderDTO orderDTO = modelMapper.map(savedOrder, OrderDTO.class);
         orderItems.forEach(item -> orderDTO.getOrderItems().add(modelMapper.map(item, OrderItemDTO.class)));
