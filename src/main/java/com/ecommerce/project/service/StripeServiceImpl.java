@@ -18,6 +18,7 @@ import com.stripe.param.CustomerSearchParams;
 import com.stripe.param.PaymentIntentCreateParams;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -27,22 +28,18 @@ import java.math.RoundingMode;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class StripeServiceImpl implements StripeService {
 
     @Value("${stripe.currency:usd}")
-    private String currency;
+    private final String currency;
 
     @Value("${stripe.secret.key}")
-    private String stripeApiKey;
+    private final String stripeApiKey;
 
-    @Autowired
-    private CartRepository cartRepository;
-
-    @Autowired
-    private AddressRepository addressRepository;
-
-    @Autowired
-    private AuthUtil authUtil;
+    private final CartRepository cartRepository;
+    private final AddressRepository addressRepository;
+    private final AuthUtil authUtil;
 
     @PostConstruct
     public void init(){

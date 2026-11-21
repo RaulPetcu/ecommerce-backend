@@ -12,6 +12,7 @@ import com.ecommerce.project.util.AuthUtil;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,37 +27,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
-    @Autowired
-    StripeService stripeService;
-
-    @Autowired
-    CartRepository cartRepository;
-
-    @Autowired
-    AddressRepository addressRepository;
-
-    @Autowired
-    OrderItemRepository orderItemRepository;
-
-    @Autowired
-    OrderRepository orderRepository;
-
-    @Autowired
-    PaymentRepository paymentRepository;
-
-    @Autowired
-    CartService cartService;
-
-    @Autowired
-    ModelMapper modelMapper;
-
-    @Autowired
-    ProductRepository productRepository;
-
-    @Autowired
-    AuthUtil authUtil;
+    private final StripeService stripeService;
+    private final CartRepository cartRepository;
+    private final AddressRepository addressRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
+    private final CartService cartService;
+    private final ModelMapper modelMapper;
+    private final ProductRepository productRepository;
+    private final AuthUtil authUtil;
 
     @Override
     @Transactional

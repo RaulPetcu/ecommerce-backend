@@ -15,6 +15,7 @@ import com.ecommerce.project.repositories.ProductRepository;
 import com.ecommerce.project.util.AuthUtil;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,21 +26,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
-public class CartServiceImpl implements CartService{
-    @Autowired
-    private CartRepository cartRepository;
+@RequiredArgsConstructor
+public class CartServiceImpl implements CartService {
 
-    @Autowired
-    private AuthUtil authUtil;
-
-    @Autowired
-    ProductRepository productRepository;
-
-    @Autowired
-    CartItemRepository cartItemRepository;
-
-    @Autowired
-    ModelMapper modelMapper;
+    private final CartRepository cartRepository;
+    private final AuthUtil authUtil;
+    private final ProductRepository productRepository;
+    private final CartItemRepository cartItemRepository;
+    private final ModelMapper modelMapper;
 
     @Value("${image.base.url}")
     private String imageBaseUrl;
